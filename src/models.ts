@@ -1,0 +1,44 @@
+export type EstadoCurso = 'aprobado' | 'convalidado' | 'en-curso' | 'pendiente';
+export type TipoCurso = 'obligatorio' | 'electivo';
+export type NivelRiesgo = 'critico' | 'advertencia' | 'bien' | 'sin-datos';
+
+export interface Evaluacion {
+  id: string;
+  label: string;
+  peso: number;
+  nota: number | null;
+}
+
+export interface Curso {
+  id: string;
+  codigo: string;
+  nombre: string;
+  ciclo: number;
+  creditos: number;
+  estado: EstadoCurso;
+  tipo: TipoCurso;
+  evaluaciones: Evaluacion[];
+}
+
+export interface NotaGuardada {
+  cursoId: string;
+  evaluaciones: {
+    [evaluacionId: string]: {
+      nota: number;
+      timestamp: number;
+    };
+  };
+}
+
+export interface EstadoModificado {
+  cursoId: string;
+  estadoAnterior: EstadoCurso;
+  estadoActual: EstadoCurso;
+  timestamp: number;
+}
+
+export interface AppData {
+  notas: NotaGuardada[];
+  estadosModificados?: EstadoModificado[];
+  lastUpdated: number;
+}
