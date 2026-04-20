@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useCoursesStore } from '../../store/coursesStore';
-import type { Curso, Evaluacion } from '../../models.js';
+import type { Curso } from '../../models.js';
 
 export default function GradeSimulator() {
   const { cursos, actualizarNota } = useCoursesStore();
@@ -70,7 +70,6 @@ export default function GradeSimulator() {
   };
 
   const promedioSimulado = calcularPromedioSimulado();
-  const evaluacionesPendientes = cursoSeleccionado?.evaluaciones.filter(e => e.nota === null) || [];
 
   return (
     <div className="space-y-6">

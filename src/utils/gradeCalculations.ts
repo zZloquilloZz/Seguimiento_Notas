@@ -64,7 +64,6 @@ export function calcularNotaMinimaRequerida(curso: Curso): {
     };
   }
 
-  const pesoConNota = evaluacionesConNota.reduce((sum, e) => sum + e.peso, 0);
   const pesoSinNota = evaluacionesSinNota.reduce((sum, e) => sum + e.peso, 0);
   const sumaNotasIngresadas = evaluacionesConNota.reduce((sum, e) => sum + (e.nota! * e.peso), 0);
 

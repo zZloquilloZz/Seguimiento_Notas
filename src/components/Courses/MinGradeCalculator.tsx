@@ -6,7 +6,7 @@ interface MinGradeCalculatorProps {
 }
 
 export default function MinGradeCalculator({ curso }: MinGradeCalculatorProps) {
-  const { notaMinima, mensaje, tipo } = calcularNotaMinimaRequerida(curso);
+  const { mensaje, tipo } = calcularNotaMinimaRequerida(curso);
 
   const evaluacionesPendientes = curso.evaluaciones.filter(e => e.nota === null);
 

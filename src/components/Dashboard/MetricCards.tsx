@@ -2,11 +2,10 @@ interface MetricCardProps {
   titulo: string;
   valor: string | number;
   subtitulo?: string;
-  icono: string;
   color?: 'blue' | 'green' | 'purple' | 'orange';
 }
 
-function MetricCard({ titulo, valor, subtitulo, icono, color = 'blue' }: MetricCardProps) {
+function MetricCard({ titulo, valor, subtitulo, color = 'blue' }: MetricCardProps) {
   const colores = {
     blue: 'bg-blue-600 dark:bg-blue-500',
     green: 'bg-green-600 dark:bg-green-500',
@@ -57,39 +56,33 @@ export default function MetricCards({
         titulo="Avance de cursos"
         valor={`${avanceCursos}%`}
         subtitulo="Solo obligatorios"
-        icono=""
         color="blue"
       />
       <MetricCard
         titulo="Créditos completados"
         valor={`${creditosCompletados}/${creditosTotales}`}
         subtitulo={`${Math.round((creditosCompletados / creditosTotales) * 100)}% del total`}
-        icono=""
         color="green"
       />
       <MetricCard
         titulo="Promedio ponderado"
         valor={promedioPonderado !== null ? promedioPonderado.toFixed(1) : '—'}
         subtitulo="General"
-        icono=""
         color="purple"
       />
       <MetricCard
         titulo="Cursos aprobados"
         valor={cursosAprobados}
-        icono=""
         color="green"
       />
       <MetricCard
         titulo="Cursos en curso"
         valor={cursosEnCurso}
-        icono=""
         color="orange"
       />
       <MetricCard
         titulo="Cursos pendientes"
         valor={cursosPendientes}
-        icono=""
         color="blue"
       />
     </div>

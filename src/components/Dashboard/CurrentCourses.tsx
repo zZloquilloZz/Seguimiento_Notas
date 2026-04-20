@@ -1,6 +1,6 @@
 import type { Curso } from '../../models.js';
 import { calcularPromedioCurso } from '../../utils/gradeCalculations';
-import { evaluarRiesgoCurso, obtenerColorRiesgo } from '../../utils/riskAssessment';
+import { evaluarRiesgoCurso } from '../../utils/riskAssessment';
 import Badge from '../shared/Badge';
 
 interface CurrentCoursesProps {
@@ -25,7 +25,6 @@ export default function CurrentCourses({ cursos }: CurrentCoursesProps) {
         {cursosEnCurso.map(curso => {
           const promedio = calcularPromedioCurso(curso);
           const riesgo = evaluarRiesgoCurso(curso);
-          const colores = obtenerColorRiesgo(riesgo);
 
           return (
             <div

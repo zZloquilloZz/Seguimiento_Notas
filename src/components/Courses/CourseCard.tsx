@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Curso } from '../../models.js';
 import { calcularPromedioCurso } from '../../utils/gradeCalculations';
-import { evaluarRiesgoCurso, obtenerColorRiesgo } from '../../utils/riskAssessment';
+import { evaluarRiesgoCurso } from '../../utils/riskAssessment';
 import Badge from '../shared/Badge';
 import CourseDetail from './CourseDetail';
 
@@ -13,7 +13,6 @@ export default function CourseCard({ curso }: CourseCardProps) {
   const [expandido, setExpandido] = useState(false);
   const promedio = calcularPromedioCurso(curso);
   const riesgo = evaluarRiesgoCurso(curso);
-  const colores = obtenerColorRiesgo(riesgo);
 
   const puedeExpandir =
     curso.estado === 'aprobado' ||
