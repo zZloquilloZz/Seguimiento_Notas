@@ -58,12 +58,12 @@ export default function GradeSimulator() {
     return Number((sumaNotas / pesoTotal).toFixed(1));
   };
 
-  const aplicarNotas = () => {
+  const aplicarNotas = async () => {
     if (!cursoSeleccionado) return;
 
-    Object.entries(notasSimuladas).forEach(([evaluacionId, nota]) => {
-      actualizarNota(cursoSeleccionado.id, evaluacionId, nota);
-    });
+    for (const [evaluacionId, nota] of Object.entries(notasSimuladas)) {
+      await actualizarNota(evaluacionId, nota);
+    }
 
     setNotasSimuladas({});
     alert('Notas aplicadas exitosamente');

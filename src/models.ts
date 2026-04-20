@@ -19,26 +19,3 @@ export interface Curso {
   tipo: TipoCurso;
   evaluaciones: Evaluacion[];
 }
-
-export interface NotaGuardada {
-  cursoId: string;
-  evaluaciones: {
-    [evaluacionId: string]: {
-      nota: number;
-      timestamp: number;
-    };
-  };
-}
-
-export interface EstadoModificado {
-  cursoId: string;
-  estadoAnterior: EstadoCurso;
-  estadoActual: EstadoCurso;
-  timestamp: number;
-}
-
-export interface AppData {
-  notas: NotaGuardada[];
-  estadosModificados?: EstadoModificado[];
-  lastUpdated: number;
-}

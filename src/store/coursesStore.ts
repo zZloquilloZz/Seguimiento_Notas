@@ -1,162 +1,295 @@
 import { create } from 'zustand';
-import type { Curso, AppData, NotaGuardada, EstadoCurso, EstadoModificado } from '../models.js';
-import { initialCourses } from '../data/initialCourses';
-
-const STORAGE_KEY = 'utp_tracker_data';
+import type { Curso, EstadoCurso } from '../models.js';
+import { supabase } from '../lib/supabase';
+import type { CursoDB, EvaluacionDB } from '../types/database';
 
 interface CoursesState {
   cursos: Curso[];
   darkMode: boolean;
-  actualizarNota: (cursoId: string, evaluacionId: string, nota: number | null) => void;
-  agregarEvaluacion: (cursoId: string, label: string, peso: number) => void;
-  cambiarEstado: (cursoId: string, nuevoEstado: EstadoCurso) => void;
+  loading: boolean;
+  error: string | null;
+  cursosYaCargados: boolean;
+  cargarCursos: (forzar?: boolean) => Promise<void>;
+  actualizarNota: (evaluacionId: string, nota: number | null) => Promise<void>;
+  actualizarEvaluacion: (evaluacionId: string, label: string, peso: number) => Promise<void>;
+  agregarEvaluacion: (cursoId: string, label: string, peso: number) => Promise<void>;
+  agregarEvaluacionesMultiples: (
+    cursoId: string,
+    evaluaciones: Array<{ label: string; peso: number }>
+  ) => Promise<void>;
+  eliminarEvaluacion: (evaluacionId: string) => Promise<void>;
+  cambiarEstado: (cursoId: string, nuevoEstado: EstadoCurso) => Promise<void>;
   toggleDarkMode: () => void;
-  cargarDatos: () => void;
-  guardarDatos: () => void;
-  exportarDatos: () => void;
-  importarDatos: (data: AppData) => void;
-}
-
-// Cargar datos desde localStorage
-function cargarDesdeStorage(): Curso[] {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (!data) return initialCourses;
-
-    const appData: AppData = JSON.parse(data);
-
-    // Merge: datos base + notas guardadas + estados modificados
-    return initialCourses.map(curso => {
-      const notasGuardadas = appData.notas.find(n => n.cursoId === curso.id);
-      const estadoModificado = appData.estadosModificados?.find(e => e.cursoId === curso.id);
-
-      let cursoActualizado = { ...curso };
-
-      // Aplicar estado modificado si existe
-      if (estadoModificado) {
-        cursoActualizado.estado = estadoModificado.estadoActual;
-      }
-
-      // Aplicar notas guardadas si existen
-      if (notasGuardadas) {
-        cursoActualizado.evaluaciones = curso.evaluaciones.map(evaluacion => {
-          const notaGuardada = notasGuardadas.evaluaciones[evaluacion.id];
-          if (!notaGuardada) return evaluacion;
-
-          return {
-            ...evaluacion,
-            nota: notaGuardada.nota,
-          };
-        });
-      }
-
-      return cursoActualizado;
-    });
-  } catch (error) {
-    console.error('Error cargando datos:', error);
-    return initialCourses;
-  }
-}
-
-// Guardar datos en localStorage
-function guardarEnStorage(cursos: Curso[]): void {
-  try {
-    const notas: NotaGuardada[] = cursos
-      .filter(c => c.evaluaciones.some(e => e.nota !== null))
-      .map(curso => ({
-        cursoId: curso.id,
-        evaluaciones: curso.evaluaciones
-          .filter(e => e.nota !== null)
-          .reduce(
-            (acc, e) => ({
-              ...acc,
-              [e.id]: {
-                nota: e.nota!,
-                timestamp: Date.now(),
-              },
-            }),
-            {}
-          ),
-      }));
-
-    // Recopilar estados modificados comparando con initialCourses
-    const estadosModificados: EstadoModificado[] = cursos
-      .filter(c => {
-        const cursoInicial = initialCourses.find(ic => ic.id === c.id);
-        return cursoInicial && cursoInicial.estado !== c.estado;
-      })
-      .map(curso => {
-        const cursoInicial = initialCourses.find(ic => ic.id === curso.id)!;
-        return {
-          cursoId: curso.id,
-          estadoAnterior: cursoInicial.estado,
-          estadoActual: curso.estado,
-          timestamp: Date.now(),
-        };
-      });
-
-    const appData: AppData = {
-      notas,
-      estadosModificados,
-      lastUpdated: Date.now(),
-    };
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-  } catch (error) {
-    console.error('Error guardando datos:', error);
-  }
+  resetCursosYaCargados: () => void;
 }
 
 export const useCoursesStore = create<CoursesState>((set, get) => ({
-  cursos: cargarDesdeStorage(),
+  cursos: [],
   darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
+  loading: false,
+  error: null,
+  cursosYaCargados: false,
 
-  actualizarNota: (cursoId, evaluacionId, nota) => {
-    set(state => ({
-      cursos: state.cursos.map(curso => {
-        if (curso.id !== cursoId) return curso;
+  cargarCursos: async (forzar = false) => {
+    // Si ya se cargaron y no se fuerza, no recargar
+    if (get().cursosYaCargados && !forzar) {
+      console.log('Cursos ya cargados, omitiendo recarga');
+      return;
+    }
 
-        return {
-          ...curso,
-          evaluaciones: curso.evaluaciones.map(evaluacion => {
-            if (evaluacion.id !== evaluacionId) return evaluacion;
-            return { ...evaluacion, nota };
-          }),
-        };
-      }),
-    }));
-    get().guardarDatos();
+    set({ loading: true, error: null });
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error('No hay usuario autenticado');
+
+      // Cargar cursos
+      const { data: cursosDB, error: cursosError } = await supabase
+        .from('cursos')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('ciclo', { ascending: true });
+
+      if (cursosError) throw cursosError;
+
+      // Cargar evaluaciones
+      const { data: evaluacionesDB, error: evaluacionesError } = await supabase
+        .from('evaluaciones')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (evaluacionesError) throw evaluacionesError;
+
+      // Combinar cursos con sus evaluaciones
+      const cursos: Curso[] = (cursosDB || []).map((cursoDB: CursoDB) => ({
+        id: cursoDB.id,
+        codigo: cursoDB.codigo,
+        nombre: cursoDB.nombre,
+        ciclo: cursoDB.ciclo,
+        creditos: cursoDB.creditos,
+        estado: cursoDB.estado,
+        tipo: cursoDB.tipo,
+        evaluaciones: (evaluacionesDB || [])
+          .filter((ev: EvaluacionDB) => ev.curso_id === cursoDB.id)
+          .map((ev: EvaluacionDB) => ({
+            id: ev.id,
+            label: ev.label,
+            peso: ev.peso,
+            nota: ev.nota,
+          })),
+      }));
+
+      set({ cursos, loading: false, cursosYaCargados: true });
+    } catch (error: any) {
+      console.error('Error cargando cursos:', error);
+      set({ error: error.message, loading: false, cursosYaCargados: false });
+    }
   },
 
-  agregarEvaluacion: (cursoId, label, peso) => {
-    set(state => ({
-      cursos: state.cursos.map(curso => {
-        if (curso.id !== cursoId) return curso;
+  resetCursosYaCargados: () => {
+    set({ cursosYaCargados: false });
+  },
 
-        const nuevaEvaluacion = {
-          id: `${cursoId}-${label}-${Date.now()}`,
+  actualizarNota: async (evaluacionId, nota) => {
+    // Optimistic update
+    const cursosAnteriores = get().cursos;
+    set({
+      cursos: cursosAnteriores.map(curso => ({
+        ...curso,
+        evaluaciones: curso.evaluaciones.map(ev =>
+          ev.id === evaluacionId ? { ...ev, nota } : ev
+        ),
+      })),
+    });
+
+    try {
+      const { error } = await supabase
+        .from('evaluaciones')
+        .update({ nota })
+        .eq('id', evaluacionId);
+
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Error actualizando nota:', error);
+      // Revertir cambio optimista
+      set({ cursos: cursosAnteriores });
+      alert('Error al guardar la nota');
+    }
+  },
+
+  actualizarEvaluacion: async (evaluacionId, label, peso) => {
+    // Optimistic update
+    const cursosAnteriores = get().cursos;
+    set({
+      cursos: cursosAnteriores.map(curso => ({
+        ...curso,
+        evaluaciones: curso.evaluaciones.map(ev =>
+          ev.id === evaluacionId ? { ...ev, label, peso } : ev
+        ),
+      })),
+    });
+
+    try {
+      const { error } = await supabase
+        .from('evaluaciones')
+        .update({ label, peso })
+        .eq('id', evaluacionId);
+
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Error actualizando evaluación:', error);
+      // Revertir cambio optimista
+      set({ cursos: cursosAnteriores });
+      throw error;
+    }
+  },
+
+  agregarEvaluacion: async (cursoId, label, peso) => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error('No hay usuario autenticado');
+
+      const { data, error } = await supabase
+        .from('evaluaciones')
+        .insert({
+          curso_id: cursoId,
+          user_id: user.id,
           label,
           peso,
           nota: null,
-        };
+        })
+        .select()
+        .single();
 
-        return {
-          ...curso,
-          evaluaciones: [...curso.evaluaciones, nuevaEvaluacion],
-        };
-      }),
-    }));
-    get().guardarDatos();
+      if (error) throw error;
+
+      // Actualizar estado local
+      set({
+        cursos: get().cursos.map(curso =>
+          curso.id === cursoId
+            ? {
+                ...curso,
+                evaluaciones: [
+                  ...curso.evaluaciones,
+                  {
+                    id: data.id,
+                    label: data.label,
+                    peso: data.peso,
+                    nota: data.nota,
+                  },
+                ],
+              }
+            : curso
+        ),
+      });
+    } catch (error: any) {
+      console.error('Error agregando evaluación:', error);
+      alert('Error al agregar evaluación');
+    }
   },
 
-  cambiarEstado: (cursoId, nuevoEstado) => {
-    set(state => ({
-      cursos: state.cursos.map(curso => {
-        if (curso.id !== cursoId) return curso;
-        return { ...curso, estado: nuevoEstado };
-      }),
-    }));
-    get().guardarDatos();
+  agregarEvaluacionesMultiples: async (
+    cursoId: string,
+    evaluaciones: Array<{ label: string; peso: number }>
+  ) => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error('No hay usuario autenticado');
+
+      // INSERT masivo
+      const evaluacionesDB = evaluaciones.map(ev => ({
+        curso_id: cursoId,
+        user_id: user.id,
+        label: ev.label,
+        peso: ev.peso,
+        nota: null,
+      }));
+
+      const { data, error } = await supabase
+        .from('evaluaciones')
+        .insert(evaluacionesDB)
+        .select();
+
+      if (error) throw error;
+
+      // Actualizar estado local con todas las nuevas evaluaciones
+      set({
+        cursos: get().cursos.map(curso =>
+          curso.id === cursoId
+            ? {
+                ...curso,
+                evaluaciones: [
+                  ...curso.evaluaciones,
+                  ...(data || []).map(ev => ({
+                    id: ev.id,
+                    label: ev.label,
+                    peso: ev.peso,
+                    nota: ev.nota,
+                  })),
+                ],
+              }
+            : curso
+        ),
+      });
+    } catch (error: any) {
+      console.error('Error agregando evaluaciones:', error);
+      throw error;
+    }
+  },
+
+  eliminarEvaluacion: async (evaluacionId) => {
+    const cursosAnteriores = get().cursos;
+
+    // Optimistic update
+    set({
+      cursos: cursosAnteriores.map(curso => ({
+        ...curso,
+        evaluaciones: curso.evaluaciones.filter(ev => ev.id !== evaluacionId),
+      })),
+    });
+
+    try {
+      const { error } = await supabase
+        .from('evaluaciones')
+        .delete()
+        .eq('id', evaluacionId);
+
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Error eliminando evaluación:', error);
+      set({ cursos: cursosAnteriores });
+      alert('Error al eliminar evaluación');
+    }
+  },
+
+  cambiarEstado: async (cursoId, nuevoEstado) => {
+    const cursosAnteriores = get().cursos;
+
+    // Optimistic update
+    set({
+      cursos: cursosAnteriores.map(curso =>
+        curso.id === cursoId ? { ...curso, estado: nuevoEstado } : curso
+      ),
+    });
+
+    try {
+      const { error } = await supabase
+        .from('cursos')
+        .update({ estado: nuevoEstado })
+        .eq('id', cursoId);
+
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Error cambiando estado:', error);
+      set({ cursos: cursosAnteriores });
+      alert('Error al cambiar estado del curso');
+    }
   },
 
   toggleDarkMode: () => {
@@ -169,103 +302,5 @@ export const useCoursesStore = create<CoursesState>((set, get) => ({
       }
       return { darkMode: newDarkMode };
     });
-  },
-
-  cargarDatos: () => {
-    set({ cursos: cargarDesdeStorage() });
-  },
-
-  guardarDatos: () => {
-    guardarEnStorage(get().cursos);
-  },
-
-  exportarDatos: () => {
-    const cursos = get().cursos;
-    const notas: NotaGuardada[] = cursos
-      .filter(c => c.evaluaciones.some(e => e.nota !== null))
-      .map(curso => ({
-        cursoId: curso.id,
-        evaluaciones: curso.evaluaciones
-          .filter(e => e.nota !== null)
-          .reduce(
-            (acc, e) => ({
-              ...acc,
-              [e.id]: {
-                nota: e.nota!,
-                timestamp: Date.now(),
-              },
-            }),
-            {}
-          ),
-      }));
-
-    const estadosModificados: EstadoModificado[] = cursos
-      .filter(c => {
-        const cursoInicial = initialCourses.find(ic => ic.id === c.id);
-        return cursoInicial && cursoInicial.estado !== c.estado;
-      })
-      .map(curso => {
-        const cursoInicial = initialCourses.find(ic => ic.id === curso.id)!;
-        return {
-          cursoId: curso.id,
-          estadoAnterior: cursoInicial.estado,
-          estadoActual: curso.estado,
-          timestamp: Date.now(),
-        };
-      });
-
-    const appData: AppData = {
-      notas,
-      estadosModificados,
-      lastUpdated: Date.now(),
-    };
-
-    const dataStr = JSON.stringify(appData, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const fecha = new Date().toISOString().split('T')[0];
-    link.download = `utp-tracker-backup-${fecha}.json`;
-    link.href = url;
-    link.click();
-    URL.revokeObjectURL(url);
-  },
-
-  importarDatos: (data: AppData) => {
-    try {
-      // Merge: datos base + datos importados
-      const cursosActualizados = initialCourses.map(curso => {
-        const notasGuardadas = data.notas.find(n => n.cursoId === curso.id);
-        const estadoModificado = data.estadosModificados?.find(e => e.cursoId === curso.id);
-
-        let cursoActualizado = { ...curso };
-
-        // Aplicar estado modificado si existe
-        if (estadoModificado) {
-          cursoActualizado.estado = estadoModificado.estadoActual;
-        }
-
-        // Aplicar notas guardadas si existen
-        if (notasGuardadas) {
-          cursoActualizado.evaluaciones = curso.evaluaciones.map(evaluacion => {
-            const notaGuardada = notasGuardadas.evaluaciones[evaluacion.id];
-            if (!notaGuardada) return evaluacion;
-
-            return {
-              ...evaluacion,
-              nota: notaGuardada.nota,
-            };
-          });
-        }
-
-        return cursoActualizado;
-      });
-
-      set({ cursos: cursosActualizados });
-      get().guardarDatos();
-    } catch (error) {
-      console.error('Error importando datos:', error);
-      throw error;
-    }
   },
 }));

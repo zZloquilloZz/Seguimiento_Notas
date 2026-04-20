@@ -14,7 +14,7 @@ import html2canvas from 'html2canvas';
 import { useRef } from 'react';
 
 export default function Dashboard() {
-  const { cursos, exportarDatos, importarDatos } = useCoursesStore();
+  const { cursos } = useCoursesStore();
   const dashboardRef = useRef<HTMLDivElement>(null);
 
   const avanceCursos = calcularAvanceCursos(cursos);
@@ -41,46 +41,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleImportarDatos = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'application/json';
-    input.onchange = async (e: Event) => {
-      const target = e.target as HTMLInputElement;
-      const file = target.files?.[0];
-      if (!file) return;
-
-      try {
-        const text = await file.text();
-        const data = JSON.parse(text);
-
-        // Validar estructura básica
-        if (!data.notas || !Array.isArray(data.notas)) {
-          alert('Archivo JSON inválido: no contiene la estructura esperada.');
-          return;
-        }
-
-        // Extraer fecha del archivo si está disponible
-        const fecha = data.lastUpdated
-          ? new Date(data.lastUpdated).toLocaleDateString('es-PE')
-          : 'desconocida';
-
-        const confirmar = window.confirm(
-          `¿Importar backup del ${fecha}? Esto sobreescribirá tus datos actuales.`
-        );
-
-        if (confirmar) {
-          importarDatos(data);
-          alert('Datos importados exitosamente.');
-        }
-      } catch (error) {
-        console.error('Error importando datos:', error);
-        alert('Error al leer el archivo: archivo JSON inválido o corrupto.');
-      }
-    };
-    input.click();
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -90,26 +50,12 @@ export default function Dashboard() {
             Fernandez Hernandez, Ademir Alfredo - SIST26P2A
           </p>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={handleImportarDatos}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
-          >
-            Importar datos
-          </button>
-          <button
-            onClick={exportarDatos}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors"
-          >
-            Exportar datos
-          </button>
-          <button
-            onClick={exportarDashboard}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-          >
-            Exportar PNG
-          </button>
-        </div>
+        <button
+          onClick={exportarDashboard}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+        >
+          Exportar PNG
+        </button>
       </div>
 
       <div ref={dashboardRef}>
