@@ -1,4 +1,4 @@
-export type EstadoCurso = 'aprobado' | 'convalidado' | 'en-curso' | 'pendiente';
+export type EstadoCurso = 'aprobado' | 'desaprobado' | 'convalidado' | 'en-curso' | 'pendiente';
 export type TipoCurso = 'obligatorio' | 'electivo';
 export type NivelRiesgo = 'critico' | 'advertencia' | 'bien' | 'sin-datos';
 

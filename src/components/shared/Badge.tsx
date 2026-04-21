@@ -10,6 +10,7 @@ export default function Badge({ tipo, valor }: BadgeProps) {
     const estado = valor as EstadoCurso;
     const estilos = {
       aprobado: 'bg-state-approved-bg text-state-approved-text',
+      desaprobado: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300',
       convalidado: 'bg-state-validated-bg text-state-validated-text',
       'en-curso': 'bg-state-current-bg text-state-current-text',
       pendiente: 'bg-state-pending-bg text-state-pending-text',
@@ -17,6 +18,7 @@ export default function Badge({ tipo, valor }: BadgeProps) {
 
     const textos = {
       aprobado: 'Aprobado',
+      desaprobado: 'Desaprobado',
       convalidado: 'Convalidado',
       'en-curso': 'En curso',
       pendiente: 'Pendiente',
@@ -30,6 +32,8 @@ export default function Badge({ tipo, valor }: BadgeProps) {
           className={`w-2 h-2 mr-1.5 rounded-full ${
             estado === 'aprobado'
               ? 'bg-state-approved-text'
+              : estado === 'desaprobado'
+              ? 'bg-red-800 dark:bg-red-300'
               : estado === 'convalidado'
               ? 'bg-state-validated-text'
               : estado === 'en-curso'

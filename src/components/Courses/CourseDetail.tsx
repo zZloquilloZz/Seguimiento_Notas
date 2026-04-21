@@ -36,7 +36,7 @@ export default function CourseDetail({ curso }: CourseDetailProps) {
 
   const promedio = calcularPromedioCurso(curso);
   const riesgo = evaluarRiesgoCurso(curso);
-  const puedeEditar = curso.estado === 'en-curso' || curso.estado === 'aprobado';
+  const puedeEditar = curso.estado === 'en-curso' || curso.estado === 'aprobado' || curso.estado === 'desaprobado';
 
   const agregarOtraFila = () => {
     setNuevasEvaluaciones([...nuevasEvaluaciones, { label: '', peso: '' }]);
@@ -186,8 +186,9 @@ export default function CourseDetail({ curso }: CourseDetailProps) {
   const obtenerTransicionesPermitidas = (): EstadoCurso[] => {
     if (curso.estado === 'convalidado') return [];
     if (curso.estado === 'pendiente') return ['en-curso'];
-    if (curso.estado === 'en-curso') return ['aprobado', 'pendiente'];
+    if (curso.estado === 'en-curso') return ['aprobado', 'desaprobado'];
     if (curso.estado === 'aprobado') return ['en-curso'];
+    if (curso.estado === 'desaprobado') return ['en-curso'];
     return [];
   };
 
@@ -197,6 +198,7 @@ export default function CourseDetail({ curso }: CourseDetailProps) {
     'pendiente': 'Pendiente',
     'en-curso': 'En curso',
     'aprobado': 'Aprobado',
+    'desaprobado': 'Desaprobado',
     'convalidado': 'Convalidado',
   };
 
@@ -407,6 +409,7 @@ export default function CourseDetail({ curso }: CourseDetailProps) {
           {transicionesPermitidas.map(estado => {
             const estilos = {
               'aprobado': 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50 border-green-300 dark:border-green-700',
+              'desaprobado': 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50 border-red-300 dark:border-red-700',
               'en-curso': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 border-yellow-300 dark:border-yellow-700',
               'pendiente': 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600',
               'convalidado': 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 border-blue-300 dark:border-blue-700',

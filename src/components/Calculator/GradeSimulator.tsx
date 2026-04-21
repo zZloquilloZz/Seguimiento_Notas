@@ -58,6 +58,47 @@ export default function GradeSimulator() {
     return Number((sumaNotas / pesoTotal).toFixed(1));
   };
 
+  const calcularMinimoRecomendado = (evaluacionId: string): { tipo: 'imposible' | 'asegurado' | 'normal'; valor: number } | null => {
+    if (!cursoSeleccionado) return null;
+
+    // Si esta evaluación ya tiene nota simulada, no mostrar mínimo
+    if (notasSimuladas[evaluacionId] !== undefined) return null;
+
+    // Calcular puntos acumulados con las notas ya ingresadas (simuladas o reales)
+    let puntosAcumulados = 0;
+    let pesoRestante = 0;
+
+    cursoSeleccionado.evaluaciones.forEach(ev => {
+      const pesoDecimal = ev.peso / 100;
+
+      if (ev.id === evaluacionId) {
+        // Esta es la evaluación para la cual calculamos el mínimo
+        pesoRestante += pesoDecimal;
+      } else if (notasSimuladas[ev.id] !== undefined) {
+        // Tiene nota simulada
+        puntosAcumulados += notasSimuladas[ev.id] * pesoDecimal;
+      } else if (ev.nota !== null) {
+        // Tiene nota real
+        puntosAcumulados += ev.nota * pesoDecimal;
+      } else {
+        // No tiene nota aún, suma al peso restante
+        pesoRestante += pesoDecimal;
+      }
+    });
+
+    if (pesoRestante === 0) return null;
+
+    const minimoRecomendado = (11.5 - puntosAcumulados) / pesoRestante;
+
+    if (minimoRecomendado > 20) {
+      return { tipo: 'imposible', valor: minimoRecomendado };
+    } else if (minimoRecomendado <= 0) {
+      return { tipo: 'asegurado', valor: minimoRecomendado };
+    } else {
+      return { tipo: 'normal', valor: minimoRecomendado };
+    }
+  };
+
   const aplicarNotas = async () => {
     if (!cursoSeleccionado) return;
 
@@ -106,8 +147,9 @@ export default function GradeSimulator() {
               Simular notas
             </h3>
 
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <div className="space-y-4">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-900">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
@@ -122,41 +164,86 @@ export default function GradeSimulator() {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                       Nota simulada
                     </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                      Mínimo recomendado
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {cursoSeleccionado.evaluaciones.map(evaluacion => (
-                    <tr key={evaluacion.id}>
-                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                        {evaluacion.label}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                        {evaluacion.peso}%
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                        {evaluacion.nota !== null ? evaluacion.nota : '—'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <input
-                          type="number"
-                          min="0"
-                          max="20"
-                          step="0.1"
-                          value={notasSimuladas[evaluacion.id] ?? ''}
-                          onChange={e =>
-                            handleNotaSimuladaChange(
-                              evaluacion.id,
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          placeholder={evaluacion.nota?.toString() || '0'}
-                          className="w-20 px-2 py-1 text-center border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </td>
-                    </tr>
-                  ))}
+                  {cursoSeleccionado.evaluaciones.map(evaluacion => {
+                    const minimo = calcularMinimoRecomendado(evaluacion.id);
+
+                    return (
+                      <tr key={evaluacion.id}>
+                        <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                          {evaluacion.label}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                          {evaluacion.peso}%
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                          {evaluacion.nota !== null ? evaluacion.nota : '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <input
+                            type="number"
+                            min="0"
+                            max="20"
+                            step="0.1"
+                            value={notasSimuladas[evaluacion.id] ?? ''}
+                            onChange={e =>
+                              handleNotaSimuladaChange(
+                                evaluacion.id,
+                                parseFloat(e.target.value) || 0
+                              )
+                            }
+                            placeholder={evaluacion.nota?.toString() || '0'}
+                            className="w-20 px-2 py-1 text-center border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium">
+                          {minimo === null ? (
+                            <span className="text-gray-400">—</span>
+                          ) : minimo.tipo === 'imposible' ? (
+                            <span className="text-red-600 dark:text-red-400">
+                              ⚠️ Imposible aprobar
+                            </span>
+                          ) : minimo.tipo === 'asegurado' ? (
+                            <span className="text-green-600 dark:text-green-400">
+                              ✅ Aprobado asegurado
+                            </span>
+                          ) : (
+                            <span className="text-yellow-600 dark:text-yellow-400">
+                              {minimo.valor.toFixed(1)}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
+              </div>
+
+              {/* Promedio simulado actual */}
+              {promedioSimulado !== null && (
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Promedio con notas actuales/simuladas:
+                    </span>
+                    <span
+                      className={`text-2xl font-bold ${
+                        promedioSimulado >= 11.5
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-red-600 dark:text-red-400'
+                      }`}
+                    >
+                      {promedioSimulado.toFixed(1)}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

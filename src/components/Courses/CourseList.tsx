@@ -32,6 +32,7 @@ export default function CourseList() {
   const filtros: { id: EstadoCurso | 'todos' | 'electivos'; label: string }[] = [
     { id: 'todos', label: 'Todos' },
     { id: 'aprobado', label: 'Aprobados' },
+    { id: 'desaprobado', label: 'Desaprobados' },
     { id: 'convalidado', label: 'Convalidados' },
     { id: 'en-curso', label: 'En curso' },
     { id: 'pendiente', label: 'Pendientes' },
@@ -134,7 +135,7 @@ export default function CourseList() {
               </button>
 
               {expandido && (
-                <div className="px-6 pb-6 space-y-3">
+                <div className="px-6 pb-6 space-y-5">
                   {cursosCiclo.map(curso => (
                     <CourseCard key={curso.id} curso={curso} />
                   ))}

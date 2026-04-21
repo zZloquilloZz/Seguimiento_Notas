@@ -1,4 +1,5 @@
 import * as pdfjsLib from 'pdfjs-dist';
+import type { EstadoCurso, TipoCurso } from '../models';
 
 // Configurar worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
@@ -11,8 +12,8 @@ export interface CursoParsed {
   nombre: string;
   creditos: number;
   ciclo: number;
-  estado: 'aprobado' | 'convalidado' | 'en-curso' | 'pendiente';
-  tipo: 'obligatorio' | 'electivo';
+  estado: EstadoCurso;
+  tipo: TipoCurso;
 }
 
 export interface ParseResult {
