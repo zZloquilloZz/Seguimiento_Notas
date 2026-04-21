@@ -16,7 +16,9 @@ export default function CourseCard({ curso }: CourseCardProps) {
 
   const puedeExpandir =
     curso.estado === 'aprobado' ||
+    curso.estado === 'desaprobado' ||
     curso.estado === 'en-curso' ||
+    curso.estado === 'pendiente' ||
     curso.estado === 'convalidado';
 
   return (
