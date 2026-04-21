@@ -33,6 +33,7 @@ export default function CourseDetail({ curso }: CourseDetailProps) {
   const [errorValidacion, setErrorValidacion] = useState('');
   const [evaluacionEditando, setEvaluacionEditando] = useState<EvaluacionEditando | null>(null);
   const [evaluacionAEliminar, setEvaluacionAEliminar] = useState<string | null>(null);
+  const [mostrarModalConfirmacion, setMostrarModalConfirmacion] = useState(false);
 
   const promedio = calcularPromedioCurso(curso);
   const riesgo = evaluarRiesgoCurso(curso);
@@ -182,6 +183,19 @@ export default function CourseDetail({ curso }: CourseDetailProps) {
     }
   };
 
+  const handleCambiarAEnCurso = () => {
+    setMostrarModalConfirmacion(true);
+  };
+
+  const confirmarCambioEstado = async () => {
+    setMostrarModalConfirmacion(false);
+    await cambiarEstado(curso.id, 'en-curso');
+  };
+
+  const cancelarCambioEstado = () => {
+    setMostrarModalConfirmacion(false);
+  };
+
   // Determinar transiciones permitidas según estado actual
   const obtenerTransicionesPermitidas = (): EstadoCurso[] => {
     if (curso.estado === 'convalidado') return [];
@@ -220,7 +234,7 @@ export default function CourseDetail({ curso }: CourseDetailProps) {
             Este curso aún no está en curso
           </p>
           <button
-            onClick={() => cambiarEstado(curso.id, 'en-curso')}
+            onClick={handleCambiarAEnCurso}
             className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm font-medium transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -228,6 +242,34 @@ export default function CourseDetail({ curso }: CourseDetailProps) {
             </svg>
             Cambiar a En curso
           </button>
+
+          {/* Modal de confirmación */}
+          {mostrarModalConfirmacion && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  ¿Confirmar cambio de estado?
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Estás a punto de marcar '<span className="font-medium text-gray-900 dark:text-white">{curso.nombre}</span>' como En curso. Una vez confirmado, no podrás revertirlo a Pendiente.
+                </p>
+                <div className="flex gap-3 justify-end pt-2">
+                  <button
+                    onClick={cancelarCambioEstado}
+                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={confirmarCambioEstado}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Sí, estoy llevando este curso
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
