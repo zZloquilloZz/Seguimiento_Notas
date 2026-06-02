@@ -19,7 +19,12 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: undefined
+        // Separar librerías pesadas en chunks propios para acelerar la carga inicial
+        manualChunks(id) {
+          if (id.includes('node_modules/recharts')) return 'recharts';
+          if (id.includes('node_modules/@supabase')) return 'supabase';
+          if (id.includes('node_modules/react')) return 'react';
+        }
       }
     }
   }

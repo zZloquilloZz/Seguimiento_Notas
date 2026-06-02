@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { parsearPDF, type CursoParsed } from '../../utils/pdfParser';
+import type { CursoParsed } from '../../utils/pdfParser';
 import { useToastStore } from '../../store/toastStore';
 import type { EstadoCurso, TipoCurso } from '../../models';
 
@@ -31,6 +31,8 @@ export default function CourseImport({ userId, onComplete }: CourseImportProps) 
     setParseando(true);
 
     try {
+      // Carga diferida: pdfjs (~1.2MB) solo se descarga al importar un PDF
+      const { parsearPDF } = await import('../../utils/pdfParser');
       const resultado = await parsearPDF(file);
       setCursos(resultado.cursos);
       setModo('pdf');

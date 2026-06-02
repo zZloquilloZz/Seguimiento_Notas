@@ -45,25 +45,19 @@ export const useCoursesStore = create<CoursesState>((set, get) => ({
       } = await supabase.auth.getUser();
       if (!user) throw new Error('No hay usuario autenticado');
 
-      // Cargar cursos
+      // Cargar cursos con sus evaluaciones en una sola query (select anidado).
+      // Requiere la FK evaluaciones.curso_id -> cursos.id en Postgres.
       const { data: cursosDB, error: cursosError } = await supabase
         .from('cursos')
-        .select('*')
+        .select('*, evaluaciones(*)')
         .eq('user_id', user.id)
         .order('ciclo', { ascending: true });
 
       if (cursosError) throw cursosError;
 
-      // Cargar evaluaciones
-      const { data: evaluacionesDB, error: evaluacionesError } = await supabase
-        .from('evaluaciones')
-        .select('*')
-        .eq('user_id', user.id);
-
-      if (evaluacionesError) throw evaluacionesError;
-
-      // Combinar cursos con sus evaluaciones
-      const cursos: Curso[] = (cursosDB || []).map((cursoDB: CursoDB) => ({
+      // Mapear filas DB al modelo de UI
+      type CursoConEvaluaciones = CursoDB & { evaluaciones: EvaluacionDB[] };
+      const cursos: Curso[] = ((cursosDB as CursoConEvaluaciones[]) || []).map(cursoDB => ({
         id: cursoDB.id,
         codigo: cursoDB.codigo,
         nombre: cursoDB.nombre,
@@ -71,14 +65,12 @@ export const useCoursesStore = create<CoursesState>((set, get) => ({
         creditos: cursoDB.creditos,
         estado: cursoDB.estado,
         tipo: cursoDB.tipo,
-        evaluaciones: (evaluacionesDB || [])
-          .filter((ev: EvaluacionDB) => ev.curso_id === cursoDB.id)
-          .map((ev: EvaluacionDB) => ({
-            id: ev.id,
-            label: ev.label,
-            peso: ev.peso,
-            nota: ev.nota,
-          })),
+        evaluaciones: (cursoDB.evaluaciones || []).map(ev => ({
+          id: ev.id,
+          label: ev.label,
+          peso: ev.peso,
+          nota: ev.nota,
+        })),
       }));
 
       set({ cursos, loading: false, cursosYaCargados: true });
