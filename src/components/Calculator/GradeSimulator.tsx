@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useCoursesStore } from '../../store/coursesStore';
+import { useToastStore } from '../../store/toastStore';
 import type { Curso } from '../../models.js';
 
 export default function GradeSimulator() {
   const { cursos, actualizarNota } = useCoursesStore();
+  const mostrarToast = useToastStore(s => s.mostrarToast);
   const cursosEnCurso = cursos.filter(c => c.estado === 'en-curso');
 
   const [cursoSeleccionado, setCursoSeleccionado] = useState<Curso | null>(
@@ -107,7 +109,7 @@ export default function GradeSimulator() {
     }
 
     setNotasSimuladas({});
-    alert('Notas aplicadas exitosamente');
+    mostrarToast('Notas aplicadas exitosamente', 'exito');
   };
 
   const promedioSimulado = calcularPromedioSimulado();

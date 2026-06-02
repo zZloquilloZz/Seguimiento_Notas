@@ -35,6 +35,40 @@ function App() {
       document.documentElement.classList.add('dark');
     }
 
+    const verificarEstadoUsuario = async (userId: string) => {
+      try {
+        // Verificar perfil
+        const { data: perfil } = await supabase
+          .from('perfiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        setTienePerfil(!!perfil);
+
+        if (perfil) {
+          // Verificar cursos
+          const { data: cursos } = await supabase
+            .from('cursos')
+            .select('id')
+            .eq('user_id', userId)
+            .limit(1);
+
+          setTieneCursos((cursos?.length ?? 0) > 0);
+
+          // Si tiene cursos, cargarlos
+          if ((cursos?.length ?? 0) > 0) {
+            await cargarCursos();
+          }
+        }
+
+        setCheckingAuth(false);
+      } catch (error) {
+        console.error('Error verificando estado:', error);
+        setCheckingAuth(false);
+      }
+    };
+
     // Verificar sesión actual
     supabase.auth.getSession().then(({ data: { session } }) => {
       const userId = session?.user?.id ?? null;
@@ -60,7 +94,6 @@ function App() {
 
       if (userId && userIdCambio) {
         // Solo verificar si el usuario cambió
-        console.log('Usuario cambió, verificando estado...');
         currentUserIdRef.current = userId;
         resetCursosYaCargados(); // Reset para que cargue los datos del nuevo usuario
         verificarEstadoUsuario(userId);
@@ -69,48 +102,15 @@ function App() {
         currentUserIdRef.current = null;
         resetCursosYaCargados();
         setCheckingAuth(false);
-      } else {
-        // Mismo usuario, no hacer nada
-        console.log('Mismo usuario, omitiendo verificación');
       }
+      // Mismo usuario: no hacer nada
     });
 
     return () => subscription.unsubscribe();
+    // Effect de arranque: corre solo al montar. Incluir las deps reabriría
+    // la suscripción de auth en cada render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const verificarEstadoUsuario = async (userId: string) => {
-    try {
-      // Verificar perfil
-      const { data: perfil } = await supabase
-        .from('perfiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      setTienePerfil(!!perfil);
-
-      if (perfil) {
-        // Verificar cursos
-        const { data: cursos } = await supabase
-          .from('cursos')
-          .select('id')
-          .eq('user_id', userId)
-          .limit(1);
-
-        setTieneCursos((cursos?.length ?? 0) > 0);
-
-        // Si tiene cursos, cargarlos
-        if ((cursos?.length ?? 0) > 0) {
-          await cargarCursos();
-        }
-      }
-
-      setCheckingAuth(false);
-    } catch (error) {
-      console.error('Error verificando estado:', error);
-      setCheckingAuth(false);
-    }
-  };
 
   const handlePerfilCompletado = () => {
     setTienePerfil(true);

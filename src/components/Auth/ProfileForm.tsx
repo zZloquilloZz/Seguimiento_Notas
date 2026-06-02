@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import { useToastStore } from '../../store/toastStore';
 import type { User } from '@supabase/supabase-js';
 
 interface ProfileFormProps {
@@ -12,12 +13,13 @@ export default function ProfileForm({ user, onComplete }: ProfileFormProps) {
   const [programa, setPrograma] = useState('');
   const [universidad, setUniversidad] = useState('');
   const [loading, setLoading] = useState(false);
+  const mostrarToast = useToastStore(s => s.mostrarToast);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!nombre.trim() || !programa.trim() || !universidad.trim()) {
-      alert('Por favor completa todos los campos');
+      mostrarToast('Por favor completa todos los campos', 'info');
       return;
     }
 
@@ -36,7 +38,7 @@ export default function ProfileForm({ user, onComplete }: ProfileFormProps) {
       onComplete();
     } catch (error) {
       console.error('Error guardando perfil:', error);
-      alert('Error al guardar el perfil');
+      mostrarToast('Error al guardar el perfil');
     } finally {
       setLoading(false);
     }

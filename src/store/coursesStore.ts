@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Curso, EstadoCurso } from '../models.js';
 import { supabase } from '../lib/supabase';
 import type { CursoDB, EvaluacionDB } from '../types/database';
+import { useToastStore } from './toastStore';
 
 interface CoursesState {
   cursos: Curso[];
@@ -33,7 +34,6 @@ export const useCoursesStore = create<CoursesState>((set, get) => ({
   cargarCursos: async (forzar = false) => {
     // Si ya se cargaron y no se fuerza, no recargar
     if (get().cursosYaCargados && !forzar) {
-      console.log('Cursos ya cargados, omitiendo recarga');
       return;
     }
 
@@ -82,9 +82,10 @@ export const useCoursesStore = create<CoursesState>((set, get) => ({
       }));
 
       set({ cursos, loading: false, cursosYaCargados: true });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error cargando cursos:', error);
-      set({ error: error.message, loading: false, cursosYaCargados: false });
+      const mensaje = error instanceof Error ? error.message : 'Error al cargar los cursos';
+      set({ error: mensaje, loading: false, cursosYaCargados: false });
     }
   },
 
@@ -111,11 +112,11 @@ export const useCoursesStore = create<CoursesState>((set, get) => ({
         .eq('id', evaluacionId);
 
       if (error) throw error;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error actualizando nota:', error);
       // Revertir cambio optimista
       set({ cursos: cursosAnteriores });
-      alert('Error al guardar la nota');
+      useToastStore.getState().mostrarToast('Error al guardar la nota');
     }
   },
 
@@ -138,7 +139,7 @@ export const useCoursesStore = create<CoursesState>((set, get) => ({
         .eq('id', evaluacionId);
 
       if (error) throw error;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error actualizando evaluación:', error);
       // Revertir cambio optimista
       set({ cursos: cursosAnteriores });
@@ -186,9 +187,9 @@ export const useCoursesStore = create<CoursesState>((set, get) => ({
             : curso
         ),
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error agregando evaluación:', error);
-      alert('Error al agregar evaluación');
+      useToastStore.getState().mostrarToast('Error al agregar evaluación');
     }
   },
 
@@ -237,7 +238,7 @@ export const useCoursesStore = create<CoursesState>((set, get) => ({
             : curso
         ),
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error agregando evaluaciones:', error);
       throw error;
     }
@@ -261,10 +262,10 @@ export const useCoursesStore = create<CoursesState>((set, get) => ({
         .eq('id', evaluacionId);
 
       if (error) throw error;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error eliminando evaluación:', error);
       set({ cursos: cursosAnteriores });
-      alert('Error al eliminar evaluación');
+      useToastStore.getState().mostrarToast('Error al eliminar evaluación');
     }
   },
 
@@ -285,10 +286,10 @@ export const useCoursesStore = create<CoursesState>((set, get) => ({
         .eq('id', cursoId);
 
       if (error) throw error;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error cambiando estado:', error);
       set({ cursos: cursosAnteriores });
-      alert('Error al cambiar estado del curso');
+      useToastStore.getState().mostrarToast('Error al cambiar estado del curso');
     }
   },
 

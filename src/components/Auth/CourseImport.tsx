@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { parsearPDF, type CursoParsed } from '../../utils/pdfParser';
+import { useToastStore } from '../../store/toastStore';
 import type { EstadoCurso, TipoCurso } from '../../models';
 
 interface CourseImportProps {
@@ -9,6 +10,7 @@ interface CourseImportProps {
 }
 
 export default function CourseImport({ userId, onComplete }: CourseImportProps) {
+  const mostrarToast = useToastStore(s => s.mostrarToast);
   const [modo, setModo] = useState<'seleccionar' | 'pdf' | 'manual'>('seleccionar');
   const [cursos, setCursos] = useState<CursoParsed[]>([]);
   const [loading, setLoading] = useState(false);
@@ -32,8 +34,8 @@ export default function CourseImport({ userId, onComplete }: CourseImportProps) 
       const resultado = await parsearPDF(file);
       setCursos(resultado.cursos);
       setModo('pdf');
-    } catch (error: any) {
-      alert(error.message || 'Error al procesar el PDF');
+    } catch (error) {
+      mostrarToast(error instanceof Error ? error.message : 'Error al procesar el PDF');
     } finally {
       setParseando(false);
     }
@@ -49,7 +51,7 @@ export default function CourseImport({ userId, onComplete }: CourseImportProps) 
       parseInt(ciclo) < 1 ||
       parseInt(ciclo) > 12
     ) {
-      alert('Por favor completa todos los campos correctamente');
+      mostrarToast('Por favor completa todos los campos correctamente', 'info');
       return;
     }
 
@@ -81,13 +83,13 @@ export default function CourseImport({ userId, onComplete }: CourseImportProps) 
     valor: string | number
   ) => {
     const nuevoCursos = [...cursos];
-    (nuevoCursos[index] as any)[campo] = valor;
+    nuevoCursos[index] = { ...nuevoCursos[index], [campo]: valor };
     setCursos(nuevoCursos);
   };
 
   const handleConfirmar = async () => {
     if (cursos.length === 0) {
-      alert('Debes agregar al menos un curso');
+      mostrarToast('Debes agregar al menos un curso', 'info');
       return;
     }
 
@@ -111,7 +113,7 @@ export default function CourseImport({ userId, onComplete }: CourseImportProps) 
       onComplete();
     } catch (error) {
       console.error('Error importando cursos:', error);
-      alert('Error al importar cursos');
+      mostrarToast('Error al importar cursos');
     } finally {
       setLoading(false);
     }

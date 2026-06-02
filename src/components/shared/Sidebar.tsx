@@ -14,34 +14,34 @@ export default function Sidebar({ vistaActual, cambiarVista }: SidebarProps) {
   const [avatarUrl, setAvatarUrl] = useState<string>('');
 
   useEffect(() => {
+    const cargarPerfil = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data } = await supabase
+          .from('perfiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (data) {
+          setPerfil(data);
+        }
+
+        // Obtener avatar de Google
+        if (user.user_metadata?.avatar_url) {
+          setAvatarUrl(user.user_metadata.avatar_url);
+        }
+      } catch (error) {
+        console.error('Error cargando perfil:', error);
+      }
+    };
+
     cargarPerfil();
   }, []);
-
-  const cargarPerfil = async () => {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data } = await supabase
-        .from('perfiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (data) {
-        setPerfil(data);
-      }
-
-      // Obtener avatar de Google
-      if (user.user_metadata?.avatar_url) {
-        setAvatarUrl(user.user_metadata.avatar_url);
-      }
-    } catch (error) {
-      console.error('Error cargando perfil:', error);
-    }
-  };
 
   const handleCerrarSesion = async () => {
     try {

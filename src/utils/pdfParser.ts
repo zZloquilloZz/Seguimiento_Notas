@@ -166,9 +166,6 @@ function parsearFormatoUTP(todasLasLineas: string[]): ParseResult {
   let cicloActual = 1;
   let cicloDetectado = false; // Para ignorar todo antes del primer ciclo
 
-  console.log('=== PARSER UTP: Iniciando análisis ===');
-  console.log('Total de líneas:', todasLasLineas.length);
-
   // Encabezados de tabla a ignorar
   const encabezados = [
     'código curso',
@@ -194,13 +191,11 @@ function parsearFormatoUTP(todasLasLineas: string[]): ParseResult {
     // Detectar programa (en la misma línea)
     if (lineaLower.startsWith('programa:')) {
       programa = linea.substring(linea.indexOf(':') + 1).trim();
-      console.log('Programa detectado:', programa);
     }
 
     // Detectar alumno (en la misma línea)
     if (lineaLower.startsWith('alumno:')) {
       nombre = linea.substring(linea.indexOf(':') + 1).trim();
-      console.log('Nombre detectado:', nombre);
     }
   }
 
@@ -219,7 +214,6 @@ function parsearFormatoUTP(todasLasLineas: string[]): ParseResult {
     // Ignorar encabezados de tabla
     const esEncabezado = encabezados.some(enc => lineaLower === enc);
     if (esEncabezado) {
-      console.log('Ignorando encabezado:', linea);
       i++;
       continue;
     }
@@ -229,7 +223,6 @@ function parsearFormatoUTP(todasLasLineas: string[]): ParseResult {
     if (nuevoCiclo !== null) {
       cicloActual = nuevoCiclo;
       cicloDetectado = true;
-      console.log(`--- Detectado ciclo ${cicloActual} ---`);
       i++;
       continue;
     }
@@ -246,7 +239,6 @@ function parsearFormatoUTP(todasLasLineas: string[]): ParseResult {
 
     if (esCodigoUTP) {
       const codigo = linea;
-      console.log(`\n→ Detectando curso con código: ${codigo}`);
 
       // Recolectar datos del curso en las siguientes líneas
       let j = i + 1;
@@ -286,12 +278,10 @@ function parsearFormatoUTP(todasLasLineas: string[]): ParseResult {
 
         // Agregar al nombre
         nombreCurso += (nombreCurso ? ' ' : '') + lineaNombre;
-        console.log(`  Nombre: "${lineaNombre}"`);
         j++;
       }
 
       if (!nombreCurso || nombreCurso.length < 3) {
-        console.log('  ✗ Nombre inválido, saltando curso');
         i = j;
         continue;
       }
@@ -308,7 +298,6 @@ function parsearFormatoUTP(todasLasLineas: string[]): ParseResult {
         const num = parseFloat(lineaNum);
         if (!isNaN(num) && num >= 0 && num <= 20) {
           numeros.push(num);
-          console.log(`  Número detectado: ${num}`);
           j++;
         } else {
           break;
@@ -316,7 +305,6 @@ function parsearFormatoUTP(todasLasLineas: string[]): ParseResult {
       }
 
       if (numeros.length < 2) {
-        console.log('  ✗ No se encontraron 2 números (horas y créditos), saltando curso');
         i = j;
         continue;
       }
@@ -334,12 +322,10 @@ function parsearFormatoUTP(todasLasLineas: string[]): ParseResult {
 
         if (lineaTipo === 'O') {
           tipo = 'obligatorio';
-          console.log(`  Tipo: Obligatorio`);
           j++;
           break;
         } else if (lineaTipo === 'E') {
           tipo = 'electivo';
-          console.log(`  Tipo: Electivo`);
           j++;
           break;
         } else {
@@ -373,7 +359,6 @@ function parsearFormatoUTP(todasLasLineas: string[]): ParseResult {
           (lineaPrereq.includes(',') && lineaPrereq.match(/1[0-9A-Z]{4,}/i)); // tiene coma y código
 
         if (esPrerequisito) {
-          console.log(`  Pre-requisito: ${lineaPrereq}`);
           j++;
           continue;
         }
@@ -397,27 +382,22 @@ function parsearFormatoUTP(todasLasLineas: string[]): ParseResult {
 
         if (estadoUpper === 'APROBADO') {
           estado = 'aprobado';
-          console.log(`  Estado: Aprobado`);
           estadoDetectado = true;
           j++;
         } else if (estadoUpper === 'CONVALIDADO') {
           estado = 'convalidado';
-          console.log(`  Estado: Convalidado`);
           estadoDetectado = true;
           j++;
         } else if (estadoUpper === 'EN CURSO') {
           estado = 'en-curso';
-          console.log(`  Estado: En curso`);
           estadoDetectado = true;
           j++;
         } else if (estadoUpper === 'PENDIENTE') {
           estado = 'pendiente';
-          console.log(`  Estado: Pendiente`);
           estadoDetectado = true;
           j++;
         } else {
           // No encontramos estado, usar pendiente por defecto
-          console.log(`  Estado: Pendiente (por defecto)`);
           break;
         }
       }
@@ -432,7 +412,6 @@ function parsearFormatoUTP(todasLasLineas: string[]): ParseResult {
         tipo,
       };
 
-      console.log('✓ Curso detectado:', cursoNuevo);
       cursos.push(cursoNuevo);
 
       // Continuar desde donde quedamos
@@ -441,8 +420,6 @@ function parsearFormatoUTP(todasLasLineas: string[]): ParseResult {
       i++;
     }
   }
-
-  console.log(`=== PARSER UTP: ${cursos.length} cursos detectados ===`);
 
   return {
     cursos,
@@ -456,8 +433,6 @@ function parsearFormatoGenerico(todasLasLineas: string[]): ParseResult {
   let nombre: string | undefined;
   let programa: string | undefined;
   let cicloActual = 1;
-
-  console.log('=== PARSER GENÉRICO: Iniciando análisis ===');
 
   // Buscar nombre y programa en las primeras 20 líneas
   for (let j = 0; j < Math.min(20, todasLasLineas.length); j++) {
@@ -494,8 +469,6 @@ function parsearFormatoGenerico(todasLasLineas: string[]): ParseResult {
     }
   }
 
-  console.log(`=== PARSER GENÉRICO: ${cursos.length} cursos detectados ===`);
-
   return {
     cursos,
     nombre,
@@ -515,26 +488,15 @@ export async function parsearPDF(file: File): Promise<ParseResult> {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
       const lineas = textContent.items
-        .map((item: any) => item.str)
+        .map(item => ('str' in item ? item.str : ''))
         .filter((str: string) => str.trim());
 
       todasLasLineas.push(...lineas);
     }
 
-    // Log del texto completo para debugging
-    console.log('==========================================');
-    console.log('TEXTO COMPLETO EXTRAÍDO DEL PDF:');
-    console.log('==========================================');
-    console.log(todasLasLineas.join('\n'));
-    console.log('==========================================');
-    console.log('Total de líneas extraídas:', todasLasLineas.length);
-    console.log('==========================================');
-
     // Detectar formato
     const textoCompleto = todasLasLineas.join(' ');
     const esUTP = esFormatoUTP(textoCompleto);
-
-    console.log('Formato detectado:', esUTP ? 'UTP' : 'GENÉRICO');
 
     // Parsear según formato
     if (esUTP) {

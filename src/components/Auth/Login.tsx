@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase';
+import { useToastStore } from '../../store/toastStore';
 
 export default function Login() {
   const handleGoogleLogin = async () => {
@@ -13,7 +14,7 @@ export default function Login() {
       if (error) throw error;
     } catch (error) {
       console.error('Error al iniciar sesión:', error);
-      alert('Error al iniciar sesión con Google');
+      useToastStore.getState().mostrarToast('Error al iniciar sesión con Google');
     }
   };
 

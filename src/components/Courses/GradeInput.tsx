@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 interface GradeInputProps {
   value: number | null;
@@ -9,9 +9,13 @@ interface GradeInputProps {
 export default function GradeInput({ value, onChange, disabled = false }: GradeInputProps) {
   const [inputValue, setInputValue] = useState(value?.toString() ?? '');
 
-  useEffect(() => {
+  // Resincronizar el input cuando el prop `value` cambia desde fuera
+  // (patrón recomendado: ajustar estado durante el render, sin useEffect)
+  const [valorPrevio, setValorPrevio] = useState(value);
+  if (value !== valorPrevio) {
+    setValorPrevio(value);
     setInputValue(value?.toString() ?? '');
-  }, [value]);
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;

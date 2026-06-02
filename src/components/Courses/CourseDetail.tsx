@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import type { Curso, EstadoCurso } from '../../models.js';
+import type { Curso, EstadoCurso, Evaluacion } from '../../models.js';
 import { useCoursesStore } from '../../store/coursesStore';
+import { useToastStore } from '../../store/toastStore';
 import { calcularPromedioCurso, calcularAporteEvaluacion } from '../../utils/gradeCalculations';
 import { evaluarRiesgoCurso } from '../../utils/riskAssessment';
 import GradeInput from './GradeInput';
@@ -25,6 +26,7 @@ interface EvaluacionEditando {
 
 export default function CourseDetail({ curso }: CourseDetailProps) {
   const { actualizarNota, actualizarEvaluacion, agregarEvaluacionesMultiples, eliminarEvaluacion, cambiarEstado } = useCoursesStore();
+  const mostrarToast = useToastStore(s => s.mostrarToast);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [nuevasEvaluaciones, setNuevasEvaluaciones] = useState<NuevaEvaluacion[]>([
     { label: '', peso: '' },
@@ -112,7 +114,7 @@ export default function CourseDetail({ curso }: CourseDetailProps) {
       await agregarEvaluacionesMultiples(curso.id, evaluacionesConPeso);
       setNuevasEvaluaciones([{ label: '', peso: '' }]);
       setMostrarFormulario(false);
-    } catch (error) {
+    } catch {
       setErrorValidacion('Error al guardar las evaluaciones');
     } finally {
       setGuardando(false);
@@ -125,7 +127,7 @@ export default function CourseDetail({ curso }: CourseDetailProps) {
     setErrorValidacion('');
   };
 
-  const iniciarEdicion = (evaluacion: any) => {
+  const iniciarEdicion = (evaluacion: Evaluacion) => {
     setEvaluacionEditando({
       id: evaluacion.id,
       label: evaluacion.label,
@@ -143,12 +145,12 @@ export default function CourseDetail({ curso }: CourseDetailProps) {
     const peso = parseFloat(evaluacionEditando.peso);
 
     if (!evaluacionEditando.label.trim()) {
-      alert('El nombre no puede estar vacío');
+      mostrarToast('El nombre no puede estar vacío', 'info');
       return;
     }
 
     if (isNaN(peso) || peso <= 0 || peso > 100) {
-      alert('El peso debe ser un número entre 1 y 100');
+      mostrarToast('El peso debe ser un número entre 1 y 100', 'info');
       return;
     }
 
@@ -160,17 +162,15 @@ export default function CourseDetail({ curso }: CourseDetailProps) {
     const pesoTotal = pesoOtrasEvaluaciones + peso;
 
     if (pesoTotal > 100) {
-      alert(
-        `Los pesos sumarían ${pesoTotal}%, deben sumar máximo 100%`
-      );
+      mostrarToast(`Los pesos sumarían ${pesoTotal}%, deben sumar máximo 100%`, 'info');
       return;
     }
 
     try {
       await actualizarEvaluacion(evaluacionEditando.id, evaluacionEditando.label.trim(), peso);
       setEvaluacionEditando(null);
-    } catch (error) {
-      alert('Error al guardar los cambios');
+    } catch {
+      mostrarToast('Error al guardar los cambios');
     }
   };
 
@@ -178,8 +178,8 @@ export default function CourseDetail({ curso }: CourseDetailProps) {
     try {
       await eliminarEvaluacion(evaluacionId);
       setEvaluacionAEliminar(null);
-    } catch (error) {
-      alert('Error al eliminar la evaluación');
+    } catch {
+      mostrarToast('Error al eliminar la evaluación');
     }
   };
 
