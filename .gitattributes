@@ -1,0 +1,6 @@
+# Normalizar line-endings a LF en el repo (evita ruido CRLF entre Windows y WSL)
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
