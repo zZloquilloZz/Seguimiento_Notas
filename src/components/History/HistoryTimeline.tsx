@@ -1,5 +1,5 @@
 import type { Curso } from '../../models.js';
-import { calcularPromedioCiclo } from '../../utils/gradeCalculations';
+import { calcularPromedioCiclo, calcularPromedioCurso } from '../../utils/gradeCalculations';
 import { obtenerCiclosUnicos } from '../../utils/progressUtils';
 import Badge from '../shared/Badge';
 
@@ -94,14 +94,9 @@ export default function HistoryTimeline({ cursos }: HistoryTimelineProps) {
                         {curso.estado === 'aprobado' && curso.evaluaciones.length > 0 && (
                           <div className="text-right ml-4">
                             {(() => {
-                              const promedio = curso.evaluaciones
-                                .filter(e => e.nota !== null)
-                                .reduce((sum, e, _, arr) => {
-                                  const pesoTotal = arr.reduce((s, ev) => s + ev.peso, 0);
-                                  return sum + (e.nota! * e.peso) / pesoTotal;
-                                }, 0);
+                              const promedio = calcularPromedioCurso(curso);
 
-                              return promedio > 0 ? (
+                              return promedio !== null ? (
                                 <span
                                   className={`text-lg font-bold ${
                                     promedio >= 11.5

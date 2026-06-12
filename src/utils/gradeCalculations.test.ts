@@ -100,6 +100,15 @@ describe('calcularNotaMinimaRequerida', () => {
     const r = calcularNotaMinimaRequerida(curso);
     expect(r.tipo).toBe('garantizado');
   });
+
+  it('usa el peso total real cuando los pesos no suman 100', () => {
+    // Pesos registrados suman 70. P1=10 (peso 40), P2 pendiente (peso 30).
+    // X = (11.5*70 - 10*40) / 30 = (805 - 400) / 30 = 13.5
+    const curso = crearCurso({ evaluaciones: [ev('P1', 40, 10), ev('P2', 30, null)] });
+    const r = calcularNotaMinimaRequerida(curso);
+    expect(r.tipo).toBe('necesita');
+    expect(r.notaMinima).toBe(13.5);
+  });
 });
 
 describe('calcularPromedioPonderado', () => {

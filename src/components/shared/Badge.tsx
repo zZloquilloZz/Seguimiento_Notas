@@ -9,11 +9,11 @@ export default function Badge({ tipo, valor }: BadgeProps) {
   if (tipo === 'estado') {
     const estado = valor as EstadoCurso;
     const estilos = {
-      aprobado: 'bg-state-approved-bg text-state-approved-text',
+      aprobado: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300',
       desaprobado: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300',
-      convalidado: 'bg-state-validated-bg text-state-validated-text',
-      'en-curso': 'bg-state-current-bg text-state-current-text',
-      pendiente: 'bg-state-pending-bg text-state-pending-text',
+      convalidado: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300',
+      'en-curso': 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300',
+      pendiente: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
     };
 
     const textos = {
@@ -31,14 +31,14 @@ export default function Badge({ tipo, valor }: BadgeProps) {
         <span
           className={`w-2 h-2 mr-1.5 rounded-full ${
             estado === 'aprobado'
-              ? 'bg-state-approved-text'
+              ? 'bg-green-800 dark:bg-green-300'
               : estado === 'desaprobado'
               ? 'bg-red-800 dark:bg-red-300'
               : estado === 'convalidado'
-              ? 'bg-state-validated-text'
+              ? 'bg-blue-800 dark:bg-blue-300'
               : estado === 'en-curso'
-              ? 'bg-state-current-text'
-              : 'bg-state-pending-text'
+              ? 'bg-amber-800 dark:bg-amber-300'
+              : 'bg-gray-700 dark:bg-gray-300'
           }`}
         />
         {textos[estado]}

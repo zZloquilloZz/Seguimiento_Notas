@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCoursesStore } from '../../store/coursesStore';
 import { useToastStore } from '../../store/toastStore';
+import { NOTA_MINIMA_APROBAR } from '../../utils/gradeCalculations';
 import type { Curso } from '../../models.js';
 
 export default function GradeSimulator() {
@@ -66,31 +67,33 @@ export default function GradeSimulator() {
     // Si esta evaluación ya tiene nota simulada, no mostrar mínimo
     if (notasSimuladas[evaluacionId] !== undefined) return null;
 
-    // Calcular puntos acumulados con las notas ya ingresadas (simuladas o reales)
+    // Calcular puntos acumulados con las notas ya ingresadas (simuladas o reales).
+    // Se usa el peso total real registrado (no se asume que suma 100).
     let puntosAcumulados = 0;
     let pesoRestante = 0;
+    let pesoTotal = 0;
 
     cursoSeleccionado.evaluaciones.forEach(ev => {
-      const pesoDecimal = ev.peso / 100;
+      pesoTotal += ev.peso;
 
       if (ev.id === evaluacionId) {
         // Esta es la evaluación para la cual calculamos el mínimo
-        pesoRestante += pesoDecimal;
+        pesoRestante += ev.peso;
       } else if (notasSimuladas[ev.id] !== undefined) {
         // Tiene nota simulada
-        puntosAcumulados += notasSimuladas[ev.id] * pesoDecimal;
+        puntosAcumulados += notasSimuladas[ev.id] * ev.peso;
       } else if (ev.nota !== null) {
         // Tiene nota real
-        puntosAcumulados += ev.nota * pesoDecimal;
+        puntosAcumulados += ev.nota * ev.peso;
       } else {
         // No tiene nota aún, suma al peso restante
-        pesoRestante += pesoDecimal;
+        pesoRestante += ev.peso;
       }
     });
 
     if (pesoRestante === 0) return null;
 
-    const minimoRecomendado = (11.5 - puntosAcumulados) / pesoRestante;
+    const minimoRecomendado = (NOTA_MINIMA_APROBAR * pesoTotal - puntosAcumulados) / pesoRestante;
 
     if (minimoRecomendado > 20) {
       return { tipo: 'imposible', valor: minimoRecomendado };
@@ -104,12 +107,22 @@ export default function GradeSimulator() {
   const aplicarNotas = async () => {
     if (!cursoSeleccionado) return;
 
+    const fallidas: string[] = [];
     for (const [evaluacionId, nota] of Object.entries(notasSimuladas)) {
-      await actualizarNota(evaluacionId, nota);
+      const ok = await actualizarNota(evaluacionId, nota);
+      if (!ok) fallidas.push(evaluacionId);
     }
 
-    setNotasSimuladas({});
-    mostrarToast('Notas aplicadas exitosamente', 'exito');
+    if (fallidas.length === 0) {
+      setNotasSimuladas({});
+      mostrarToast('Notas aplicadas exitosamente', 'exito');
+    } else {
+      // Conservar solo las simulaciones que no se pudieron guardar
+      setNotasSimuladas(prev =>
+        Object.fromEntries(Object.entries(prev).filter(([id]) => fallidas.includes(id)))
+      );
+      mostrarToast(`${fallidas.length} nota(s) no se pudieron guardar. Reintenta.`);
+    }
   };
 
   const promedioSimulado = calcularPromedioSimulado();

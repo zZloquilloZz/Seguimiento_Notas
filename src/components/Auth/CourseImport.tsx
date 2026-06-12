@@ -368,6 +368,7 @@ export default function CourseImport({ userId, onComplete }: CourseImportProps) 
                           <option value="pendiente">Pendiente</option>
                           <option value="en-curso">En curso</option>
                           <option value="aprobado">Aprobado</option>
+                          <option value="desaprobado">Desaprobado</option>
                           <option value="convalidado">Convalidado</option>
                         </select>
                       </td>
@@ -529,6 +530,7 @@ export default function CourseImport({ userId, onComplete }: CourseImportProps) 
                 <option value="pendiente">Pendiente</option>
                 <option value="en-curso">En curso</option>
                 <option value="aprobado">Aprobado</option>
+                <option value="desaprobado">Desaprobado</option>
                 <option value="convalidado">Convalidado</option>
               </select>
             </div>

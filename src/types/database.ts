@@ -13,7 +13,7 @@ export interface CursoDB {
   nombre: string;
   ciclo: number;
   creditos: number;
-  estado: 'aprobado' | 'convalidado' | 'en-curso' | 'pendiente';
+  estado: 'aprobado' | 'desaprobado' | 'convalidado' | 'en-curso' | 'pendiente';
   tipo: 'obligatorio' | 'electivo';
   created_at: string;
 }

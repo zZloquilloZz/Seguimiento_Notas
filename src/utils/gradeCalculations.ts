@@ -1,6 +1,6 @@
 import type { Curso, Evaluacion } from '../models.js';
 
-const NOTA_MINIMA_APROBAR = 11.5;
+export const NOTA_MINIMA_APROBAR = 11.5;
 
 /**
  * Calcula el promedio de un curso basado en las evaluaciones ingresadas
@@ -67,8 +67,11 @@ export function calcularNotaMinimaRequerida(curso: Curso): {
   const pesoSinNota = evaluacionesSinNota.reduce((sum, e) => sum + e.peso, 0);
   const sumaNotasIngresadas = evaluacionesConNota.reduce((sum, e) => sum + (e.nota! * e.peso), 0);
 
-  // Nota mínima X = (11.5 * 100 - suma ya ingresada) / peso pendiente
-  const notaMinimaX = (NOTA_MINIMA_APROBAR * 100 - sumaNotasIngresadas) / pesoSinNota;
+  // Usar el peso total real registrado (no asumir que suma 100):
+  // el promedio final se calcula sobre los pesos registrados, así que
+  // X = (11.5 * pesoTotal - suma ya ingresada) / peso pendiente
+  const pesoTotal = pesoSinNota + evaluacionesConNota.reduce((sum, e) => sum + e.peso, 0);
+  const notaMinimaX = (NOTA_MINIMA_APROBAR * pesoTotal - sumaNotasIngresadas) / pesoSinNota;
 
   if (notaMinimaX > 20) {
     return {

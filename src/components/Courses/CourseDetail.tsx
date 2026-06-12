@@ -218,8 +218,8 @@ export default function CourseDetail({ curso }: CourseDetailProps) {
 
   if (curso.estado === 'convalidado') {
     return (
-      <div className="mt-4 p-4 bg-state-validated-bg rounded-lg border border-blue-200 dark:border-blue-800">
-        <p className="text-state-validated-text text-sm font-medium">
+      <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <p className="text-blue-800 dark:text-blue-300 text-sm font-medium">
           Curso convalidado - sin calificación numérica
         </p>
       </div>

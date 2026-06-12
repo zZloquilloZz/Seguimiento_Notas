@@ -7,6 +7,7 @@ interface ChartsProps {
   cursos: Curso[];
   contadores: {
     aprobados: number;
+    desaprobados: number;
     convalidados: number;
     enCurso: number;
     pendientes: number;
@@ -14,9 +15,12 @@ interface ChartsProps {
 }
 
 export default function Charts({ cursos, contadores }: ChartsProps) {
-  // Datos para gráfico de dona
+  // Datos para gráfico de dona (desaprobados solo si existen, para no ensuciar la leyenda)
   const donutData = [
     { name: 'Aprobados', value: contadores.aprobados, color: '#3b6d11' },
+    ...(contadores.desaprobados > 0
+      ? [{ name: 'Desaprobados', value: contadores.desaprobados, color: '#a32d2d' }]
+      : []),
     { name: 'Convalidados', value: contadores.convalidados, color: '#185fa5' },
     { name: 'En curso', value: contadores.enCurso, color: '#854f0b' },
     { name: 'Pendientes', value: contadores.pendientes, color: '#5f5e5a' },

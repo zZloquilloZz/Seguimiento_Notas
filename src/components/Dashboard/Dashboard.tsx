@@ -11,11 +11,37 @@ import Charts from './Charts';
 import AlertSection from './AlertSection';
 import CurrentCourses from './CurrentCourses';
 import html2canvas from 'html2canvas';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+import type { Perfil } from '../../types/database';
 
 export default function Dashboard() {
   const { cursos } = useCoursesStore();
   const dashboardRef = useRef<HTMLDivElement>(null);
+  const [perfil, setPerfil] = useState<Perfil | null>(null);
+
+  useEffect(() => {
+    const cargarPerfil = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data } = await supabase
+          .from('perfiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (data) setPerfil(data);
+      } catch (error) {
+        console.error('Error cargando perfil:', error);
+      }
+    };
+
+    cargarPerfil();
+  }, []);
 
   const avanceCursos = calcularAvanceCursos(cursos);
   const { completados, total, porcentaje } = calcularAvanceCreditos(cursos);
@@ -47,7 +73,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Fernandez Hernandez, Ademir Alfredo - SIST26P2A
+            {perfil ? `${perfil.nombre} — ${perfil.programa}` : 'Resumen de tu avance académico'}
           </p>
         </div>
         <button

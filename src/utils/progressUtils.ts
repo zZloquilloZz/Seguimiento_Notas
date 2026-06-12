@@ -40,12 +40,14 @@ export function calcularAvanceCreditos(cursos: Curso[]): {
  */
 export function contarCursosPorEstado(cursos: Curso[]): {
   aprobados: number;
+  desaprobados: number;
   convalidados: number;
   enCurso: number;
   pendientes: number;
 } {
   return {
     aprobados: cursos.filter(c => c.estado === 'aprobado').length,
+    desaprobados: cursos.filter(c => c.estado === 'desaprobado').length,
     convalidados: cursos.filter(c => c.estado === 'convalidado').length,
     enCurso: cursos.filter(c => c.estado === 'en-curso').length,
     pendientes: cursos.filter(c => c.estado === 'pendiente').length,

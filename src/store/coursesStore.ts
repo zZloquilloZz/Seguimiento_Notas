@@ -11,7 +11,8 @@ interface CoursesState {
   error: string | null;
   cursosYaCargados: boolean;
   cargarCursos: (forzar?: boolean) => Promise<void>;
-  actualizarNota: (evaluacionId: string, nota: number | null) => Promise<void>;
+  // Retorna true si la nota se persistió, false si Supabase falló (y se revirtió)
+  actualizarNota: (evaluacionId: string, nota: number | null) => Promise<boolean>;
   actualizarEvaluacion: (evaluacionId: string, label: string, peso: number) => Promise<void>;
   agregarEvaluacion: (cursoId: string, label: string, peso: number) => Promise<void>;
   agregarEvaluacionesMultiples: (
@@ -104,11 +105,13 @@ export const useCoursesStore = create<CoursesState>((set, get) => ({
         .eq('id', evaluacionId);
 
       if (error) throw error;
+      return true;
     } catch (error) {
       console.error('Error actualizando nota:', error);
       // Revertir cambio optimista
       set({ cursos: cursosAnteriores });
       useToastStore.getState().mostrarToast('Error al guardar la nota');
+      return false;
     }
   },
 
